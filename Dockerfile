@@ -1,26 +1,34 @@
-# シンプルなNext.js用Dockerfile（Playwright無し版）
-FROM node:20-alpine
+# Production Dockerfile for Render
+FROM node:18-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json ./
 
 # Install dependencies
-RUN npm ci --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 
-# Copy application files
+# Copy source code
 COPY . .
 
-# Build the application
+# Build application
 RUN npm run build
 
-# Set environment variables
+# Production stage
+FROM node:18-alpine AS runner
+
+WORKDIR /app
+
 ENV NODE_ENV=production
 ENV PORT=10000
 ENV HOSTNAME=0.0.0.0
 
+# Copy built application
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
 EXPOSE 10000
 
-# Start the application
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
