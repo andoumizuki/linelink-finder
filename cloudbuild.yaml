@@ -1,0 +1,58 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/linelink-repo/linelink-finder:$BUILD_ID'
+      - '-t'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/linelink-repo/linelink-finder:latest'
+      - '.'
+
+  # Push the container image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/linelink-repo/linelink-finder:$BUILD_ID'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/linelink-repo/linelink-finder:latest'
+
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'linelink-finder'
+      - '--image'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/linelink-repo/linelink-finder:$BUILD_ID'
+      - '--region'
+      - 'asia-northeast1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '2'
+      - '--timeout'
+      - '300'
+      - '--concurrency'
+      - '100'
+      - '--max-instances'
+      - '10'
+      - '--set-env-vars'
+      - 'OPENAI_API_KEY=${_OPENAI_API_KEY}'
+
+images:
+  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/linelink-repo/linelink-finder:$BUILD_ID'
+  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/linelink-repo/linelink-finder:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+
+timeout: '1200s'
