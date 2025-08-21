@@ -1,4 +1,4 @@
-import { chromium } from 'playwright'
+// import { chromium } from 'playwright' // Temporarily disabled for deployment
 import * as cheerio from 'cheerio'
 import { detectLINELinksWithAI } from './openai'
 
@@ -13,7 +13,7 @@ export interface ScrapeResult {
 
 export async function scrapeWebsite(url: string): Promise<ScrapeResult> {
   // Try with Playwright first for dynamic content
-  let usePlaywright = true
+  let usePlaywright = false // Disabled for Render deployment
   let browser = null
   
   try {
