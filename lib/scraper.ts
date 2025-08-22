@@ -12,56 +12,20 @@ export interface ScrapeResult {
 }
 
 export async function scrapeWebsite(url: string): Promise<ScrapeResult> {
-  // Try with Playwright first for dynamic content
-  let usePlaywright = false // Disabled for Render deployment
-  let browser = null
-  
   try {
-    if (usePlaywright) {
-      try {
-        browser = await chromium.launch({
-          headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox']
-        })
-        
-        const context = await browser.newContext({
-          userAgent: 'LINE-Link-Finder/1.0 (Compatible; Company Scanner)'
-        })
-        
-        const page = await context.newPage()
-        await page.goto(url, { 
-          waitUntil: 'networkidle',
-          timeout: 30000 
-        })
-        
-        const content = await page.content()
-        await browser.close()
-        
-        return await extractLineInfo(content, url)
-      } catch (playwrightError) {
-        console.log('Playwright failed, falling back to fetch:', playwrightError)
-        if (browser) await browser.close()
-        usePlaywright = false
+    // Simple fetch-based approach for Render deployment
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'LINE-Link-Finder/1.0 (Compatible; Company Scanner)'
       }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
     }
     
-    // Fallback to simple fetch
-    if (!usePlaywright) {
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'LINE-Link-Finder/1.0 (Compatible; Company Scanner)'
-        }
-      })
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      const html = await response.text()
-      return await extractLineInfo(html, url)
-    }
-    
-    throw new Error('Failed to fetch website')
+    const html = await response.text()
+    return await extractLineInfo(html, url)
   } catch (error) {
     return {
       url,
